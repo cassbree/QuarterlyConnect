@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teradata Quarterly Connect</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff;--bg2:#f7f7f5;--bg3:#f2f2f0;
+  --text:#1a1a2e;--text2:#5a5a72;--text3:#9a9aaa;
+  --border:rgba(0,0,0,0.09);--border-md:rgba(0,0,0,0.16);
+  --orange:#F96302;--orange-l:#fff3ec;--orange-d:#e05500;
+  --r-md:8px;--r-lg:12px;--r-xl:18px;
+  --font:'DM Sans',system-ui,sans-serif;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#18182a;--bg2:#22223a;--bg3:#2a2a42;
+  --text:#f0f0f8;--text2:#a0a0b8;--text3:#6a6a82;
+  --border:rgba(255,255,255,0.07);--border-md:rgba(255,255,255,0.14);
+  --orange-l:rgba(249,99,2,0.13);
+}}
+body{font-family:var(--font);background:var(--bg3);color:var(--text);min-height:100vh;line-height:1.6}
+
+/* ── GATE ── */
+#gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem}
+.gate-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r-xl);padding:2.5rem;max-width:460px;width:100%}
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:2rem}
+.logo-mark{width:30px;height:30px;background:var(--orange);border-radius:6px;display:flex;align-items:center;justify-content:center}
+.logo-mark svg{width:16px;height:16px;fill:white}
+.logo-name{font-size:15px;font-weight:500}
+.logo-name span{color:var(--text2);font-weight:400;font-size:13px;margin-left:4px}
+.gate-card h2{font-size:18px;font-weight:500;margin-bottom:6px}
+.gate-card p{font-size:13px;color:var(--text2);margin-bottom:1.25rem;line-height:1.75}
+.gate-card a{color:var(--orange);text-decoration:none}
+.key-wrap{position:relative;margin-bottom:.875rem}
+.key-wrap input{width:100%;padding:11px 48px 11px 14px;border:0.5px solid var(--border-md);border-radius:var(--r-md);font-family:var(--font);font-size:14px;color:var(--text);background:var(--bg2);outline:none;transition:border-color .2s;letter-spacing:.03em}
+.key-wrap input:focus{border-color:var(--orange)}
+.vis-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);font-size:12px;font-family:var(--font)}
+.notice{font-size:12px;color:var(--text3);line-height:1.7;padding:10px 12px;background:var(--bg2);border-radius:var(--r-md);margin-bottom:1rem}
+.notice strong{color:var(--text2)}
+.notice code{background:rgba(0,0,0,0.07);padding:1px 5px;border-radius:3px;font-size:11px;font-family:monospace}
+.err{font-size:13px;color:#d63031;margin-bottom:10px;display:none;line-height:1.5}
+
+/* ── APP SHELL ── */
+#app{display:none}
+.app-header{background:var(--bg);border-bottom:0.5px solid var(--border);padding:0 1.5rem;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.h-left{display:flex;align-items:center;gap:10px}
+.h-mark{width:24px;height:24px;background:var(--orange);border-radius:5px;display:flex;align-items:center;justify-content:center}
+.h-mark svg{width:13px;height:13px;fill:white}
+.h-title{font-size:14px;font-weight:500}
+.h-title span{color:var(--text2);font-weight:400;font-size:12px;margin-left:5px}
+.h-link{font-size:12px;color:var(--text3);background:none;border:none;cursor:pointer;font-family:var(--font)}
+.h-link:hover{color:var(--text)}
+.app-body{max-width:660px;margin:0 auto;padding:2rem 1.5rem 5rem}
+
+/* ── PROGRESS ── */
+.progress-bar{display:flex;align-items:center;gap:0;margin-bottom:2rem;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r-xl);padding:3px;overflow:hidden}
+.pb-step{flex:1;text-align:center;font-size:11px;padding:6px 4px;border-radius:14px;color:var(--text3);cursor:pointer;transition:all .2s;white-space:nowrap}
+.pb-step.active{background:var(--orange);color:white;font-weight:500}
+.pb-step.done{color:var(--text2)}
+.pb-step.done::before{content:'✓ ';font-size:10px}
+.pb-step.locked{pointer-events:none;opacity:.45}
+
+/* ── TYPE CARDS (MODE SELECT) ── */
+.mode-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:1.5rem}
+.mode-card{background:var(--bg);border:0.5px solid var(--border-md);border-radius:var(--r-lg);padding:1.25rem 1.5rem;cursor:pointer;transition:all .2s;display:flex;align-items:flex-start;gap:14px}
+.mode-card:hover{border-color:var(--orange);background:var(--orange-l)}
+.mode-card.selected{border-color:var(--orange);background:var(--orange-l);border-width:1.5px}
+.mode-icon{width:36px;height:36px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+.mode-card.selected .mode-icon{background:var(--orange);color:white}
+.mode-info{flex:1}
+.mode-title{font-size:15px;font-weight:500;margin-bottom:3px}
+.mode-desc{font-size:13px;color:var(--text2);line-height:1.6}
+.mode-tag{font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:500;color:var(--orange);margin-bottom:4px}
+
+/* ── CONVERSATION (DISCOVERY MODE) ── */
+.chat-thread{display:flex;flex-direction:column;gap:14px;margin-bottom:1.25rem}
+.msg{max-width:82%;animation:fadeup .25s ease}
+.msg-ai{align-self:flex-start}
+.msg-user{align-self:flex-end}
+.bubble{padding:11px 15px;border-radius:var(--r-lg);font-size:14px;line-height:1.7}
+.bubble-ai{background:var(--bg);border:0.5px solid var(--border);color:var(--text)}
+.bubble-user{background:var(--orange);color:white}
+.bubble-typing span{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--text3);margin:0 2px;animation:typedot 1.1s infinite}
+.bubble-typing span:nth-child(2){animation-delay:.2s}
+.bubble-typing span:nth-child(3){animation-delay:.4s}
+.msg-name{font-size:11px;color:var(--text3);margin-bottom:4px;padding:0 4px}
+
+/* quick reply chips */
+.quick-replies{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem}
+.qr{font-size:13px;padding:7px 14px;border-radius:20px;border:0.5px solid var(--border-md);color:var(--text2);background:var(--bg);cursor:pointer;font-family:var(--font);transition:all .15s;line-height:1.3;text-align:left}
+.qr:hover{border-color:var(--orange);color:var(--orange);background:var(--orange-l)}
+
+/* chat input row */
+.chat-input-row{display:flex;gap:8px;align-items:flex-end}
+.chat-input-row textarea{flex:1;min-height:44px;max-height:140px;resize:none;padding:10px 13px;font-size:14px;line-height:1.55;border:0.5px solid var(--border-md);border-radius:var(--r-lg);background:var(--bg);color:var(--text);font-family:var(--font);outline:none;transition:border-color .2s}
+.chat-input-row textarea:focus{border-color:var(--orange)}
+.chat-input-row textarea::placeholder{color:var(--text3)}
+.send-btn{width:40px;height:40px;border-radius:10px;background:var(--orange);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
+.send-btn:hover{background:var(--orange-d)}
+.send-btn:disabled{opacity:.4;cursor:not-allowed}
+.send-btn svg{width:16px;height:16px;fill:white}
+
+/* ── DIRECT ENTRY (REFRAME MODE) ── */
+.section-tag{font-size:10px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;color:var(--orange);margin-bottom:5px}
+.q-head{font-size:20px;font-weight:500;line-height:1.35;margin-bottom:6px}
+.q-sub{font-size:13px;color:var(--text2);margin-bottom:1.25rem;line-height:1.7}
+.card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r-lg);padding:1.25rem;margin-bottom:.875rem}
+.lbl{font-size:12px;color:var(--text2);margin-bottom:6px;display:block}
+.hint{font-size:12px;color:var(--text3)}
+textarea.field,input.field{width:100%;border:0.5px solid var(--border);border-radius:var(--r-md);padding:10px 12px;font-family:var(--font);font-size:14px;color:var(--text);background:var(--bg2);line-height:1.6;outline:none;transition:border-color .2s;resize:vertical;min-height:78px}
+input.field{min-height:unset;resize:none}
+textarea.field:focus,input.field:focus{border-color:var(--orange)}
+textarea.field::placeholder,input.field::placeholder{color:var(--text3)}
+
+/* ── AI OUTPUT ── */
+.ai-block{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r-lg);padding:1.25rem;margin-top:1rem}
+.ai-lbl{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:10px}
+.ai-text{font-size:14px;color:var(--text);line-height:1.8;white-space:pre-wrap}
+.ai-text.streaming::after{content:'▋';animation:blink .7s infinite;display:inline;font-size:12px;color:var(--text3)}
+.copy-btn{font-size:12px;color:var(--text2);background:var(--bg);border:0.5px solid var(--border-md);border-radius:var(--r-md);padding:5px 13px;cursor:pointer;font-family:var(--font);margin-top:10px;transition:all .15s}
+.copy-btn:hover{color:var(--orange);border-color:var(--orange)}
+.tip-pill{font-size:12px;color:var(--text2);background:var(--orange-l);border-radius:var(--r-md);padding:9px 13px;margin-top:10px;line-height:1.65;border-left:2px solid var(--orange)}
+.divider{height:0.5px;background:var(--border);margin:12px 0}
+
+/* ── PILLS / TONE ── */
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.pill{font-size:12px;padding:4px 12px;border-radius:20px;cursor:pointer;border:0.5px solid var(--border-md);color:var(--text2);background:transparent;font-family:var(--font);transition:all .15s}
+.pill:hover{border-color:var(--orange);color:var(--orange)}
+.pill.sel{background:var(--orange);color:white;border-color:var(--orange)}
+
+/* context pills */
+.ctx-pill{font-size:12px;padding:4px 11px;border-radius:20px;cursor:pointer;border:0.5px solid var(--border-md);color:var(--text2);background:transparent;font-family:var(--font);transition:all .15s;margin:2px;display:inline-flex;align-items:center;gap:5px}
+.ctx-pill:hover{border-color:var(--orange);color:var(--orange)}
+.ctx-pill.sel{background:var(--orange-l);color:var(--orange);border-color:var(--orange)}
+.ctx-group-label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);font-weight:500;margin-bottom:5px;margin-top:10px}
+
+/* ── BUTTONS ── */
+.btn{font-family:var(--font);cursor:pointer;border-radius:var(--r-md);font-size:14px;padding:10px 20px;transition:all .15s;border:none;font-weight:400}
+.btn-p{background:var(--orange);color:white;font-weight:500}
+.btn-p:hover{background:var(--orange-d)}
+.btn-p:disabled{opacity:.4;cursor:not-allowed}
+.btn-s{background:transparent;color:var(--text2);border:0.5px solid var(--border-md)}
+.btn-s:hover{background:var(--bg2);color:var(--text)}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:1.25rem}
+
+/* ── REVIEW ── */
+.review-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r-lg);padding:1.25rem;margin-bottom:1rem}
+.review-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-weight:500;margin-bottom:10px}
+.review-txt{font-size:14px;color:var(--text);line-height:1.8;white-space:pre-wrap}
+
+/* ── COACHING PANEL ── */
+.coaching-header{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r-lg);padding:1.25rem;margin-bottom:1rem;display:flex;align-items:center;gap:14px}
+.coaching-icon{width:40px;height:40px;background:var(--orange-l);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.topic-btn{font-size:13px;padding:9px 14px;border-radius:var(--r-md);border:0.5px solid var(--border-md);background:var(--bg);color:var(--text2);cursor:pointer;font-family:var(--font);transition:all .15s;display:flex;align-items:center;gap:8px;text-align:left;width:100%;margin-bottom:8px}
+.topic-btn:hover{border-color:var(--orange);color:var(--orange);background:var(--orange-l)}
+.topic-btn.active{border-color:var(--orange);color:var(--orange);background:var(--orange-l)}
+.topic-icon{font-size:14px;width:22px;text-align:center;flex-shrink:0}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeup{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes typedot{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-3px)}}
+.fade-in{animation:fadeup .3s ease}
+
+/* ── GOAL FIELDS ── */
+.goal-upload-zone{border:1.5px dashed var(--border-md);border-radius:var(--r-lg);padding:1.75rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg2)}
+.goal-upload-zone:hover{border-color:var(--orange);background:var(--orange-l)}
+.ld span{display:inline-block;animation:typedot 1.1s infinite;margin:0 1px}
+.ld span:nth-child(2){animation-delay:.2s}
+.ld span:nth-child(3){animation-delay:.4s}
+</style>
+</head>
+<body>
+
+<!-- ═══ GATE ═══ -->
+<div id="gate">
+  <div class="gate-card">
+    <div class="logo">
+      <div class="logo-mark"><svg viewBox="0 0 20 20"><path d="M10 2L2 7v6l8 5 8-5V7L10 2zm0 2.5l5.5 3.5-5.5 3.5L4.5 8 10 4.5zM3.5 9.2l6 3.8v4.5l-6-3.8V9.2zm13 0v4.5l-6 3.8V13l6-3.8z"/></svg></div>
+      <div class="logo-name">Teradata <span>Quarterly Connect</span></div>
+    </div>
+    <h2>Enter your Anthropic API key</h2>
+    <p>This assistant helps you write a great performance reflection and prepare for a productive conversation with your manager. Your key is used only in your browser — never stored.</p>
+    <div class="key-wrap">
+      <input type="password" id="keyIn" placeholder="sk-ant-..." autocomplete="off">
+      <button class="vis-btn" onclick="toggleVis()" id="visBtn">show</button>
+    </div>
+    <div class="notice">
+      🔒 Stays in memory only — never saved to disk.<br><br>
+      <strong>Get a key:</strong> <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key<br><br>
+      <strong>Common issues:</strong> Copy the full key starting with <code>sk-ant-</code> · Use Chrome or Edge · Check billing credits
+    </div>
+    <div class="err" id="keyErr"></div>
+    <button class="btn btn-p" onclick="submitKey()" id="keyBtn" style="width:100%">Continue →</button>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app">
+  <header class="app-header">
+    <div class="h-left">
+      <div class="h-mark"><svg viewBox="0 0 20 20"><path d="M10 2L2 7v6l8 5 8-5V7L10 2zm0 2.5l5.5 3.5-5.5 3.5L4.5 8 10 4.5zM3.5 9.2l6 3.8v4.5l-6-3.8V9.2zm13 0v4.5l-6 3.8V13l6-3.8z"/></svg></div>
+      <div class="h-title">Teradata <span>Quarterly Connect</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span id="modeTag" style="font-size:11px;padding:3px 10px;border-radius:12px;background:var(--orange-l);color:var(--orange);display:none"></span>
+      <button class="h-link" onclick="changeKey()">Change key</button>
+    </div>
+  </header>
+  <div class="app-body">
+    <div id="progressBar"></div>
+    <div id="screen"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// COMPANY DATA
+// ═══════════════════════════════════════════════════════════════
+const COMPANY = {
+  scorecard:[
+    {id:'sv',label:'Stakeholder Value',obj:'ARR Growth & Free Cash Flow'},
+    {id:'cv',label:'Customer Value',obj:'NPS & new references'},
+    {id:'ti',label:'Technology Innovation',obj:'Product roadmap delivery'},
+    {id:'ct',label:'Culture & Talent',obj:'Engagement & belonging'}
+  ],
+  principles:[
+    {id:'cm',label:'Customer & Market Driven',desc:'Market-driven, innovating for where customers are going'},
+    {id:'ae',label:'Agility in Execution',desc:'Urgency, entrepreneurial mindset, good stewardship of resources'},
+    {id:'ac',label:'Accountability to Each Other',desc:'Trust, collaborate, debate, decide, commit with velocity'}
+  ],
+  pillars:[
+    {id:'ins',label:'Inspire',desc:'Model culture. Connect work to outcomes. Lead with curiosity.'},
+    {id:'trn',label:'Transform',desc:'Drive change decisively. Give direct feedback. Trust the team.'},
+    {id:'ach',label:'Achieve',desc:'Set and reset goals. Follow through. Develop people.'}
+  ]
+};
+
+const BASE_SYSTEM = `You are a thoughtful performance reflection coach at Teradata. You help employees surface their genuine contributions and prepare for productive conversations with their managers.
+
+Teradata 2026 Company Goals:
+- Stakeholder Value: ARR Growth and Free Cash Flow
+- Customer Value: Improve NPS and add new references
+- Technology Innovation: Deliver product roadmap — Autonomous AI and Knowledge Platform
+- Culture & Talent: Achieve engagement and belonging scores
+
+Core Principles: Customer & Market Driven | Agility in Execution | Accountability to Each Other
+
+Leadership Pillars: Inspire (model culture, connect work to outcomes) | Transform (drive change, give feedback) | Achieve (set goals, develop people)
+
+Always: Write in first person. Be concise and human. Avoid corporate filler. Weave in Teradata context only where it fits authentically. Never list all principles — pick the most relevant 1-2.`;
+
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+let apiKey = '';
+let S = {
+  step: 'mode', mode: null, name: '', role: '',
+  // discovery mode state
+  discovery: { thread: [], collectedContext: {} },
+  // direct mode state
+  direct: { q1:'', q2:'', improvements:'', skill:'', why:'', developing:'', support:'', tone:'', scorecard:[], principles:[], pillars:[] },
+  // goals
+  goals: { parsedGoals: null, manualProgress:'', newWork:'', addGoal:'', newGoalDetail:'', milestones:'' },
+  // outputs
+  outputs: { q1:'', q2:'', goals:'' }
+};
+
+const STEPS_BY_MODE = {
+  discovery: ['mode','discover','goals','review'],
+  direct: ['mode','q1','q2','goals','review'],
+  coaching: ['mode','coaching','goals','review']
+};
+
+const STEP_LABELS = {
+  mode: 'Start', discover: 'Discover', q1: 'Reflection', q2: 'Skills',
+  coaching: 'Coaching', goals: 'Goals', review: 'Summary'
+};
+
+const $ = id => document.getElementById(id);
+
+// ═══════════════════════════════════════════════════════════════
+// GATE
+// ═══════════════════════════════════════════════════════════════
+function toggleVis(){ const i=$('keyIn'); i.type=i.type==='password'?'text':'password'; $('visBtn').textContent=i.type==='password'?'show':'hide'; }
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const i=$('keyIn'); if(i) i.addEventListener('keydown',e=>{ if(e.key==='Enter') submitKey(); });
+});
+
+async function submitKey(){
+  const key = $('keyIn').value.trim();
+  if(!key){ showErr('Please paste your API key.'); return; }
+  if(!key.startsWith('sk-ant-')){ showErr('Key should start with "sk-ant-" — copy the full key from console.anthropic.com.'); return; }
+  const btn = $('keyBtn'); btn.disabled=true; btn.textContent='Connecting…'; $('keyErr').style.display='none';
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:10,messages:[{role:'user',content:'hi'}]})});
+    if(r.ok){ apiKey=key; $('gate').style.display='none'; $('app').style.display='block'; render(); }
+    else {
+      const eb = await r.json().catch(()=>({}));
+      const msg = eb?.error?.message||'';
+      if(r.status===401) showErr('Invalid API key (401) — double-check you copied the full key with no extra spaces.');
+      else if(r.status===403) showErr('Access denied (403) — your key may not have browser access enabled.');
+      else if(r.status===429) showErr('Rate limit or billing issue (429) — check your usage at console.anthropic.com.');
+      else showErr(`Error ${r.status}${msg?': '+msg:' — check your key and try again.'}`);
+      btn.disabled=false; btn.textContent='Continue →';
+    }
+  } catch(e){
+    showErr('Network error — could not reach Anthropic. Try Chrome or Edge; Safari may block direct API access.');
+    btn.disabled=false; btn.textContent='Continue →';
+  }
+}
+function showErr(m){ $('keyErr').textContent=m; $('keyErr').style.display='block'; }
+function changeKey(){ $('gate').style.display='flex'; $('app').style.display='none'; apiKey=''; $('keyIn').value=''; $('keyBtn').disabled=false; $('keyBtn').textContent='Continue →'; }
+
+// ═══════════════════════════════════════════════════════════════
+// STREAMING
+// ═══════════════════════════════════════════════════════════════
+async function stream(messages, systemPrompt, onChunk, onDone){
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,stream:true,system:systemPrompt||BASE_SYSTEM,messages})});
+    const reader=r.body.getReader(); const dec=new TextDecoder(); let buf='';
+    while(true){
+      const {done,value}=await reader.read(); if(done) break;
+      buf+=dec.decode(value,{stream:true});
+      const lines=buf.split('\n'); buf=lines.pop();
+      for(const l of lines){ if(l.startsWith('data: ')){ try{ const d=JSON.parse(l.slice(6)); if(d.type==='content_block_delta'&&d.delta?.text) onChunk(d.delta.text); }catch{} } }
+    }
+    if(onDone) onDone();
+  } catch(e){ onChunk('\n[Error — check API key and try again.]'); if(onDone) onDone(); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ROUTING & PROGRESS
+// ═══════════════════════════════════════════════════════════════
+function render(){ updateProgress(); const screens={mode:renderMode,discover:renderDiscover,q1:renderQ1,q2:renderQ2,coaching:renderCoaching,goals:renderGoals,review:renderReview}; (screens[S.step]||renderMode)(); window.scrollTo({top:0,behavior:'smooth'}); }
+function goStep(s){ S.step=s; render(); }
+
+function updateProgress(){
+  const steps = S.mode ? STEPS_BY_MODE[S.mode] : ['mode'];
+  const idx = steps.indexOf(S.step);
+  if(idx===-1){ $('progressBar').innerHTML=''; return; }
+  $('progressBar').innerHTML=`<div class="progress-bar">${steps.map((s,i)=>{
+    const done=i<idx, active=i===idx, locked=i>idx&&i>1;
+    return `<div class="pb-step ${done?'done':active?'active':'locked'}" onclick="${done?`goStep('${s}')`:'void 0'}">${STEP_LABELS[s]||s}</div>`;
+  }).join('')}</div>`;
+  // mode tag
+  const tag=$('modeTag');
+  if(S.mode&&S.step!=='mode'){ tag.textContent={discovery:'🔍 Discovery mode',direct:'✏️ Direct entry',coaching:'🎯 Coaching mode'}[S.mode]; tag.style.display='inline'; }
+  else tag.style.display='none';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCREEN: MODE SELECT
+// ═══════════════════════════════════════════════════════════════
+function renderMode(){
+  $('screen').innerHTML=`<div class="fade-in">
+    <div style="margin-bottom:1.75rem">
+      <div class="section-tag">Quarterly Connect</div>
+      <div class="q-head">What do you need today?</div>
+      <div class="q-sub">Pick the approach that fits where you are right now. You can always switch.</div>
+    </div>
+
+    ${S.name===''?`<div class="card" style="margin-bottom:1.5rem">
+      <label class="lbl">Your name & role <span class="hint">(optional — personalises your reflection)</span></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <input class="field" id="nameIn" placeholder="e.g. Jordan" value="${S.name}">
+        <input class="field" id="roleIn" placeholder="e.g. Senior Account Manager" value="${S.role}">
+      </div>
+    </div>`:''}
+
+    <div class="mode-grid">
+      <div class="mode-card ${S.mode==='discovery'?'selected':''}" onclick="selectMode('discovery')">
+        <div class="mode-icon" style="${S.mode==='discovery'?'background:var(--orange)':''}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="${S.mode==='discovery'?'white':'var(--text2)'}"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
+        </div>
+        <div class="mode-info">
+          <div class="mode-tag">I'm not sure where to start</div>
+          <div class="mode-title">Help me discover what to write</div>
+          <div class="mode-desc">Answer a few short conversational questions about your recent work. The assistant will uncover your key contributions and shape your reflection for you.</div>
+        </div>
+      </div>
+
+      <div class="mode-card ${S.mode==='direct'?'selected':''}" onclick="selectMode('direct')">
+        <div class="mode-icon" style="${S.mode==='direct'?'background:var(--orange)':''}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="${S.mode==='direct'?'white':'var(--text2)'}"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+        </div>
+        <div class="mode-info">
+          <div class="mode-tag">I know what I did, I need help writing it</div>
+          <div class="mode-title">Polish and reframe my notes</div>
+          <div class="mode-desc">Paste in your rough notes, bullet points, or half-formed thoughts. The assistant will turn them into a polished, Workday-ready reflection.</div>
+        </div>
+      </div>
+
+      <div class="mode-card ${S.mode==='coaching'?'selected':''}" onclick="selectMode('coaching')">
+        <div class="mode-icon" style="${S.mode==='coaching'?'background:var(--orange)':''}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="${S.mode==='coaching'?'white':'var(--text2)'}"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+        </div>
+        <div class="mode-info">
+          <div class="mode-tag">I want strategic guidance</div>
+          <div class="mode-title">Coach me on positioning & conversation</div>
+          <div class="mode-desc">Get coaching on how to position your work, frame your narrative, and prepare for a strong, confident conversation with your manager.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="launchMode()" ${S.mode?'':'disabled'} id="launchBtn">Get started →</button>
+    </div>
+  </div>`;
+}
+
+function selectMode(m){
+  if($('nameIn')) S.name=$('nameIn').value;
+  if($('roleIn')) S.role=$('roleIn').value;
+  S.mode=m; renderMode();
+}
+
+function launchMode(){
+  if($('nameIn')) S.name=$('nameIn').value;
+  if($('roleIn')) S.role=$('roleIn').value;
+  if(!S.mode) return;
+  const next = {discovery:'discover',direct:'q1',coaching:'coaching'}[S.mode];
+  goStep(next);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCREEN: DISCOVERY MODE — conversational elicitation
+// ═══════════════════════════════════════════════════════════════
+const DISCOVERY_SYSTEM = `${BASE_SYSTEM}
+
+You are in DISCOVERY MODE. Your job is to help an employee surface what they've actually done this quarter through natural, friendly conversation — without asking directly "what did you contribute?" or "what challenges did you face?"
+
+Instead, ask questions about:
+- Specific projects, initiatives, or workstreams they were part of
+- People they worked with, cross-functional teams, customer interactions
+- Moments that felt meaningful, hard, or satisfying
+- Decisions they made or influenced
+- Things that changed because of their work
+- What they'd do differently next time
+
+Rules:
+- Ask ONE short question at a time. Never more than one.
+- Be warm, curious, and specific — not formal or HR-sounding
+- After 3-4 exchanges, you'll have enough to draft a reflection — offer to do so
+- When drafting, generate BOTH the Q1 reflection (contributions/challenges/growth) AND the Q2 reflection (skills/development) in one go
+- Keep each question to 1-2 sentences max
+- Never use corporate language like "stakeholders", "deliverables", "action items" in your questions
+
+Start by asking a single warm opening question that gets them talking about what they were working on.`;
+
+function renderDiscover(){
+  const thread = S.discovery.thread;
+
+  if(!thread.length){
+    // Kick off with AI opening question
+    thread.push({role:'assistant',text:'',streaming:true});
+    renderDiscoverUI();
+    const msgs=[{role:'user',content:`I'm ${S.name||'an employee'}${S.role?' working as a '+S.role:''} at Teradata. I want help figuring out what to write for my Quarterly Connect reflection. Please ask me your first question to help me think through what I've been working on.`}];
+    let t='';
+    stream(msgs, DISCOVERY_SYSTEM, c=>{ t+=c; thread[0].text=t; renderDiscoverUI(); }, ()=>{
+      thread[0].streaming=false; renderDiscoverUI();
+    });
+    return;
+  }
+  renderDiscoverUI();
+}
+
+function renderDiscoverUI(){
+  const thread = S.discovery.thread;
+  const isStreaming = thread.length && thread[thread.length-1].streaming;
+  const hasEnough = thread.filter(m=>m.role==='user').length >= 3;
+  const drafted = S.outputs.q1 && S.outputs.q2;
+
+  let chatHtml = '<div class="chat-thread" id="chatThread">';
+  thread.forEach(m=>{
+    if(m.role==='assistant'){
+      chatHtml += `<div class="msg msg-ai"><div class="msg-name">Coach</div>
+        <div class="bubble bubble-ai">${m.streaming&&!m.text?'<span class="bubble-typing"><span></span><span></span><span></span></span>':escHtml(m.text)}</div></div>`;
+    } else {
+      chatHtml += `<div class="msg msg-user"><div class="bubble bubble-user">${escHtml(m.text)}</div></div>`;
+    }
+  });
+  chatHtml += '</div>';
+
+  // Quick reply suggestions (only when not streaming and early in convo)
+  let quickReplies = '';
+  const userCount = thread.filter(m=>m.role==='user').length;
+  if(!isStreaming && userCount === 0 && thread.length === 1){
+    quickReplies = `<div class="quick-replies">
+      <button class="qr" onclick="sendDiscovery(this.textContent)">I've been heads-down on a big project</button>
+      <button class="qr" onclick="sendDiscovery(this.textContent)">It's been a mixed quarter — some wins, some struggles</button>
+      <button class="qr" onclick="sendDiscovery(this.textContent)">Honestly, I'm not sure where to begin</button>
+    </div>`;
+  }
+
+  // Offer to draft once enough context collected
+  let draftOffer = '';
+  if(!isStreaming && hasEnough && !drafted){
+    draftOffer = `<div class="card" style="margin-bottom:1rem;border-color:var(--orange)">
+      <div style="font-size:13px;font-weight:500;margin-bottom:4px;">Ready to draft your reflection?</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.65">You've shared a good amount — I can turn this conversation into a polished Q1 and Q2 reflection now. Or keep chatting to add more.</div>
+      <div class="btn-row" style="margin-top:0">
+        <button class="btn btn-p" onclick="draftFromDiscovery()">Draft my reflection →</button>
+        <button class="btn btn-s" onclick="keepChatting()">Keep chatting first</button>
+      </div>
+    </div>`;
+  }
+
+  let draftOutput = '';
+  if(S.outputs.q1 || S.discovery.drafting){
+    draftOutput = `<div id="discoveryDraft">
+      ${S.discovery.drafting?`<div class="ai-block"><div class="ai-lbl">Drafting your reflection…</div><div class="ai-text streaming" id="draftStream"></div></div>`:''}
+      ${S.outputs.q1?buildReflectionOut('q1',S.outputs.q1,'Q1 — Contributions, challenges & growth'):''}
+      ${S.outputs.q2?buildReflectionOut('q2',S.outputs.q2,'Q2 — Skills & development'):''}
+      ${S.outputs.q1&&S.outputs.q2?`<div class="btn-row"><button class="btn btn-p" onclick="goStep('goals')">Goal check-in →</button></div>`:''}
+    </div>`;
+  }
+
+  $('screen').innerHTML=`<div class="fade-in">
+    <div class="section-tag">Discovery conversation</div>
+    <div class="q-head" style="font-size:18px;margin-bottom:.5rem">Let's figure out what you've been doing</div>
+    <div class="q-sub">Just talk naturally — I'll ask questions and find the story in your answers.</div>
+    ${chatHtml}
+    ${quickReplies}
+    ${draftOffer}
+    ${draftOutput}
+    ${!drafted?`<div class="chat-input-row">
+      <textarea id="chatIn" placeholder="Type your answer…" rows="1" onkeydown="chatKeyDown(event)"></textarea>
+      <button class="send-btn" onclick="sendFromInput()" ${isStreaming?'disabled':''}>
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>`:''}
+    <div class="btn-row" style="margin-top:1rem">
+      <button class="btn btn-s" onclick="goStep('mode')">← Change mode</button>
+    </div>
+  </div>`;
+
+  // Auto-scroll chat to bottom
+  const ct=$('chatThread'); if(ct) ct.scrollTop=ct.scrollHeight;
+
+  // Auto-resize textarea
+  const ta=$('chatIn');
+  if(ta) ta.addEventListener('input',()=>{ ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,140)+'px'; });
+}
+
+function chatKeyDown(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendFromInput(); } }
+function sendFromInput(){ const ta=$('chatIn'); if(ta&&ta.value.trim()) sendDiscovery(ta.value.trim()); }
+function keepChatting(){ renderDiscoverUI(); }
+
+function sendDiscovery(text){
+  if(!text.trim()) return;
+  const thread = S.discovery.thread;
+  thread.push({role:'user',text});
+  thread.push({role:'assistant',text:'',streaming:true});
+  renderDiscoverUI();
+
+  // Build message history for API
+  const msgs = thread.slice(0,-1).map(m=>({role:m.role,content:m.text}));
+  let t='';
+  stream(msgs, DISCOVERY_SYSTEM, c=>{ t+=c; thread[thread.length-1].text=t; renderDiscoverUI(); }, ()=>{
+    thread[thread.length-1].streaming=false; renderDiscoverUI();
+  });
+}
+
+async function draftFromDiscovery(){
+  S.discovery.drafting=true;
+  renderDiscoverUI();
+
+  const convo = S.discovery.thread.filter(m=>!m.streaming).map(m=>`${m.role==='user'?'Employee':'Coach'}: ${m.text}`).join('\n\n');
+  const prompt=`Based on this discovery conversation, generate two polished Workday-ready reflections.
+
+CONVERSATION:
+${convo}
+
+Employee name/role: ${S.name||'Employee'}${S.role?' — '+S.role:''}
+
+Generate BOTH sections. Each must be 80-150 words, first person, natural and human. Weave in 1-2 Teradata principles/goals where they authentically fit. Do NOT force all of them.
+
+Format EXACTLY as:
+
+---Q1: CONTRIBUTIONS, CHALLENGES & GROWTH---
+[reflection text]
+💡 Coaching tip: [one brief suggestion]
+
+---Q2: SKILLS & DEVELOPMENT---
+[reflection text]
+💡 Coaching tip: [one brief suggestion]`;
+
+  let text='';
+  await new Promise(res=>{
+    stream([{role:'user',content:prompt}], BASE_SYSTEM, c=>{
+      text+=c;
+      const el=$('draftStream'); if(el) el.textContent=text;
+    }, ()=>{
+      S.discovery.drafting=false;
+      // Parse out Q1 and Q2
+      const q1m=text.match(/---Q1[^-]*---([\s\S]*?)(?=---Q2|$)/i);
+      const q2m=text.match(/---Q2[^-]*---([\s\S]*?)$/i);
+      S.outputs.q1 = q1m?q1m[1].trim():'';
+      S.outputs.q2 = q2m?q2m[1].trim():'';
+      renderDiscoverUI();
+      res();
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCREEN: DIRECT ENTRY — Q1
+// ═══════════════════════════════════════════════════════════════
+function renderQ1(){
+  $('screen').innerHTML=`<div class="fade-in">
+    <div class="section-tag">Question 1 of 2</div>
+    <div class="q-head">What happened this quarter?</div>
+    <div class="q-sub">Rough notes, bullet points, or a brain dump — write how you think. The assistant will shape it into a polished reflection.</div>
+
+    <div class="card">
+      <label class="lbl">Projects & work you drove or contributed to</label>
+      <textarea class="field" id="d_contributions" placeholder="e.g. Led onboarding of 3 new enterprise clients, finished the Q2 benchmarking report, ran the cross-functional alignment meeting that unblocked the roadmap decision…" style="min-height:90px">${S.direct.q1}</textarea>
+    </div>
+
+    <div class="card">
+      <label class="lbl">Anything that was hard, slow, or didn't go as planned</label>
+      <textarea class="field" id="d_challenges" placeholder="e.g. Two competing priorities meant some deadlines slipped, communication gap with the APAC team caused rework…" style="min-height:75px">${S.direct.q2}</textarea>
+    </div>
+
+    <div class="card">
+      <label class="lbl">One thing you want to do differently next quarter</label>
+      <textarea class="field" id="d_improve" placeholder="e.g. Build stakeholder alignment earlier so we don't revisit decisions late in the process…" style="min-height:65px">${S.direct.improvements}</textarea>
+    </div>
+
+    ${ctxPicker('direct')}
+
+    <div class="card">
+      <label class="lbl">Tone</label>
+      <div class="pill-row">${['Confident','Reflective','Direct','Collaborative'].map(t=>`<button class="pill ${S.direct.tone===t?'sel':''}" onclick="setTone('${t}',this)">${t}</button>`).join('')}</div>
+    </div>
+
+    <div id="q1Out">${S.outputs.q1?buildReflectionOut('q1',S.outputs.q1,'Your Q1 reflection — ready to copy'):''}</div>
+
+    <div class="btn-row">
+      <button class="btn btn-s" onclick="goStep('mode')">← Back</button>
+      <button class="btn btn-p" id="g1btn" onclick="runQ1()">Generate reflection →</button>
+      ${S.outputs.q1?`<button class="btn btn-s" onclick="goStep('q2')">Next: Skills →</button>`:''}
+    </div>
+  </div>`;
+}
+
+function setTone(t,el){ S.direct.tone=S.direct.tone===t?'':t; el.closest('.pill-row').querySelectorAll('.pill').forEach(p=>p.classList.remove('sel')); if(S.direct.tone) el.classList.add('sel'); }
+
+async function runQ1(){
+  S.direct.q1=$('d_contributions').value; S.direct.q2=$('d_challenges').value; S.direct.improvements=$('d_improve').value;
+  if(!S.direct.q1&&!S.direct.q2){ $('q1Out').innerHTML=errBox('Add some notes about your work first.'); return; }
+  const btn=$('g1btn'); btn.disabled=true; btn.innerHTML=`Generating <span class="ld"><span>.</span><span>.</span><span>.</span></span>`;
+  $('q1Out').innerHTML=`<div class="ai-block"><div class="ai-lbl">Writing your reflection…</div><div class="ai-text streaming" id="q1stream"></div></div>`;
+
+  const ctx = buildCtxString();
+  const prompt=`Write a polished first-person performance reflection (80–150 words) for the Quarterly Connect question: "What were your key contributions, challenges, and what do you want to improve?"
+
+Employee notes:
+- Contributions: ${S.direct.q1||'Not provided'}
+- Challenges: ${S.direct.q2||'Not provided'}
+- Improvement area: ${S.direct.improvements||'Not provided'}
+${S.direct.tone?'- Tone: '+S.direct.tone:''}
+${S.role?'- Role: '+S.role:''}
+${ctx}
+
+Ready to paste into Workday. Naturally weave in 1-2 Teradata priorities where authentic — don't force all of them. Then on a new line: "💡 Coaching tip:" with one brief suggestion.`;
+
+  let text='';
+  await new Promise(res=>stream([{role:'user',content:prompt}],BASE_SYSTEM,c=>{text+=c;const el=$('q1stream');if(el)el.textContent=text;},()=>{
+    S.outputs.q1=text; btn.disabled=false; btn.textContent='Regenerate →';
+    $('q1Out').innerHTML=buildReflectionOut('q1',text,'Your Q1 reflection — ready to copy');
+    const row=btn.parentElement; if(!row.querySelector('.nxt')){const nb=document.createElement('button');nb.className='btn btn-s nxt';nb.textContent='Next: Skills →';nb.onclick=()=>goStep('q2');row.appendChild(nb);}
+    res();
+  }));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCREEN: DIRECT ENTRY — Q2
+// ═══════════════════════════════════════════════════════════════
+function renderQ2(){
+  $('screen').innerHTML=`<div class="fade-in">
+    <div class="section-tag">Question 2 of 2</div>
+    <div class="q-head">What skill are you building right now?</div>
+    <div class="q-sub">Think about what your role demands most, or where Teradata is heading — what's the one skill that matters most for you to develop?</div>
+
+    <div class="card">
+      <label class="lbl">The skill or capability you're focused on</label>
+      <textarea class="field" id="d_skill" placeholder="e.g. Stakeholder communication, cloud architecture, cross-functional leadership, data storytelling…" style="min-height:60px">${S.direct.skill}</textarea>
+    </div>
+    <div class="card">
+      <label class="lbl">Why it matters for your role or Teradata's direction</label>
+      <textarea class="field" id="d_why" placeholder="e.g. As we focus on NPS and customer outcomes, communicating value clearly to senior stakeholders is critical for deal velocity…">${S.direct.why}</textarea>
+    </div>
+    <div class="card">
+      <label class="lbl">How you're actively working on it</label>
+      <textarea class="field" id="d_developing" placeholder="e.g. Weekly LinkedIn Learning course, practising in team stand-ups, asking for feedback after key presentations…">${S.direct.developing}</textarea>
+    </div>
+    <div class="card">
+      <label class="lbl">Any support you need <span class="hint">(optional)</span></label>
+      <textarea class="field" id="d_support" placeholder="e.g. Mentoring from a senior leader, training budget, more exposure to customer calls…" style="min-height:60px">${S.direct.support}</textarea>
+    </div>
+
+    ${ctxPicker('direct')}
+
+    <div id="q2Out">${S.outputs.q2?buildReflectionOut('q2',S.outputs.q2,'Your Q2 reflection — ready to copy'):''}</div>
+
+    <div class="btn-row">
+      <button class="btn btn-s" onclick="goStep('q1')">← Back</button>
+      <button class="btn btn-p" id="g2btn" onclick="runQ2()">Generate reflection →</button>
+      ${S.outputs.q2?`<button class="btn btn-s" onclick="goStep('goals')">Goal check-in →</button>`:''}
+    </div>
+  </div>`;
+  ['skill','why','developing','support'].forEach(id=>{ const el=$('d_'+id); if(el) el.addEventListener('input',()=>S.direct[id]=el.value); });
+}
+
+async function runQ2(){
+  ['skill','why','developing','support'].forEach(id=>{ if($('d_'+id)) S.direct[id]=$('d_'+id).value; });
+  if(!S.direct.skill){ $('q2Out').innerHTML=errBox('Name the skill you\'re focusing on first.'); return; }
+  const btn=$('g2btn'); btn.disabled=true; btn.innerHTML=`Generating <span class="ld"><span>.</span><span>.</span><span>.</span></span>`;
+  $('q2Out').innerHTML=`<div class="ai-block"><div class="ai-lbl">Writing your reflection…</div><div class="ai-text streaming" id="q2stream"></div></div>`;
+
+  const ctx=buildCtxString();
+  const prompt=`Write a polished first-person reflection (80–150 words) for the Quarterly Connect question: "Which skill is most important for your role, why, and how are you developing it? Any support needs?"
+
+Employee notes:
+- Skill: ${S.direct.skill}
+- Why it matters: ${S.direct.why||'Not provided'}
+- How developing: ${S.direct.developing||'Not provided'}
+- Support needs: ${S.direct.support||'None'}
+${S.role?'- Role: '+S.role:''}
+${ctx}
+
+Ready to paste into Workday. Weave in 1-2 Teradata priorities where authentic. Then: "💡 Coaching tip:" with one brief suggestion.`;
+
+  let text='';
+  await new Promise(res=>stream([{role:'user',content:prompt}],BASE_SYSTEM,c=>{text+=c;const el=$('q2stream');if(el)el.textContent=text;},()=>{
+    S.outputs.q2=text; btn.disabled=false; btn.textContent='Regenerate →';
+    $('q2Out').innerHTML=buildReflectionOut('q2',text,'Your Q2 reflection — ready to copy');
+    const row=btn.parentElement; if(!row.querySelector('.nxt')){const nb=document.createElement('button');nb.className='btn btn-s nxt';nb.textContent='Goal check-in →';nb.onclick=()=>goStep('goals');row.appendChild(nb);}
+    res();
+  }));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCREEN: COACHING MODE
+// ═══════════════════════════════════════════════════════════════
+const COACHING_TOPICS = [
+  {id:'narrative',icon:'🗺',title:'Build my narrative arc','desc':'How to tell a coherent story across your quarter'},
+  {id:'position',icon:'🎯',title:'Position my impact','desc':'Frame contributions in terms of business outcomes'},
+  {id:'growth',icon:'📈',title:'Frame my growth honestly','desc':'Talk about challenges without sounding negative'},
+  {id:'mgr',icon:'💬',title:'Prepare for the conversation','desc':'What to say, what to listen for, how to follow up'},
+  {id:'promo',icon:'⬆️',title:'Signal readiness for more','desc':'How to demonstrate you\'re ready for the next level'},
+  {id:'recovery',icon:'🔄',title:'Recover from a tough quarter','desc':'How to present a difficult period constructively'}
+];
+
+function renderCoaching(){
+  const activeTopic = S.coaching_topic||null;
+  $('screen').innerHTML=`<div class="fade-in">
+    <div class="coaching-header">
+      <div class="coaching-icon">🎯</div>
+      <div>
+        <div class="section-tag">Coaching mode</div>
+        <div style="font-size:16px;font-weight:500">What do you want to work on?</div>
+        <div style="font-size:13px;color:var(--text2)">Pick a topic and I'll coach you through it.</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:1.25rem">
+      ${COACHING_TOPICS.map(t=>`
+        <button class="topic-btn ${activeTopic===t.id?'active':''}" onclick="selectCoachingTopic('${t.id}')">
+          <span class="topic-icon">${t.icon}</span>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:${activeTopic===t.id?'500':'400'}">${t.title}</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:1px">${t.desc}</div>
+          </div>
+          ${activeTopic===t.id?`<svg width="14" height="14" viewBox="0 0 24 24" fill="var(--orange)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`:''}
+        </button>`).join('')}
+    </div>
+
+    <div id="coachingOut"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-s" onclick="goStep('mode')">← Back</button>
+      ${S.outputs.q1||S.outputs.q2?`<button class="btn btn-s" onclick="goStep('review')">See my reflection →</button>`:''}
+      <button class="btn btn-s" onclick="goStep('goals')">Goal check-in →</button>
+    </div>
+  </div>`;
+
+  if(activeTopic&&S.coaching_output) $('coachingOut').innerHTML=buildCoachingOut(activeTopic,S.coaching_output);
+}
+
+function selectCoachingTopic(id){
+  S.coaching_topic=id; S.coaching_output=''; renderCoaching();
+  const topic = COACHING_TOPICS.find(t=>t.id===id);
+  if(!topic) return;
+
+  const prompts={
+    narrative:`Give me a practical coaching guide (200-250 words) on how to build a strong narrative arc for a quarterly performance reflection at Teradata. Help me understand how to connect individual activities into a coherent story that shows progression and impact. Include 2-3 specific prompts or questions I can ask myself.`,
+    position:`Coach me (200-250 words) on how to reframe my work in terms of business outcomes rather than just activities. Show me the difference between "I did X" and "X resulted in Y" with practical Teradata-relevant examples. Include a simple before/after framing technique.`,
+    growth:`Give me coaching (200-250 words) on how to talk about challenges, setbacks, or a difficult period in a performance review in a way that shows growth mindset and self-awareness without sounding like I'm making excuses or being negative.`,
+    mgr:`Coach me (200-250 words) on how to prepare for and make the most of a Quarterly Connect conversation with my manager. What should I say proactively? What questions should I ask? How do I make sure I leave with clarity and momentum?`,
+    promo:`Help me (200-250 words) understand how to signal readiness for career advancement in a performance reflection and manager conversation at Teradata. What language, examples, and behaviours demonstrate I'm ready for more responsibility?`,
+    recovery:`Give me practical coaching (200-250 words) on how to present a quarter where things didn't go well — missed goals, reduced impact, or external challenges — in a way that's honest, constructive, and forward-looking. What do managers actually want to hear?`
+  };
+
+  const p = prompts[id] || `Give me coaching on "${topic.title}".`;
+  $('coachingOut').innerHTML=`<div class="ai-block"><div class="ai-lbl">${topic.icon} ${topic.title}</div><div class="ai-text streaming" id="coachStream"></div></div>`;
+
+  let text='';
+  stream([{role:'user',content:p}],BASE_SYSTEM,c=>{text+=c;const el=$('coachStream');if(el)el.textContent=text;},()=>{
+    const el=$('coachStream');if(el)el.classList.remove('streaming');
+    S.coaching_output=text;
+    $('coachingOut').innerHTML=buildCoachingOut(id,text);
+  });
+}
+
+function buildCoachingOut(id,text){
+  const topic=COACHING_TOPICS.find(t=>t.id===id)||{icon:'',title:'Coaching'};
+  return `<div class="ai-block">
+    <div class="ai-lbl">${topic.icon} ${topic.title}</div>
+    <div class="ai-text" id="coachText">${escHtml(text)}</div>
+    <button class="copy-btn" onclick="copyEl('coachText')">Copy coaching notes</button>
+    <div class="divider"></div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:8px">Ready to write your reflection?</div>
+    <div class="btn-row" style="margin-top:0">
+      <button class="btn btn-p" onclick="goStep('q1')">Write reflection →</button>
+      <button class="btn btn-s" onclick="goStep('goals')">Skip to goals →</button>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCREEN: GOALS
+// ═══════════════════════════════════════════════════════════════
+
+// SheetJS 0.18.5 — the actual latest public version on cdnjs
+// Loaded once on demand; promise cached so multiple calls are safe
+let _xlsxLib = null;
+function getXLSX(){
+  if(_xlsxLib) return _xlsxLib;
+  _xlsxLib = new Promise(function(resolve, reject){
+    if(window.XLSX){ resolve(window.XLSX); return; }
+    var s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload  = function(){ resolve(window.XLSX); };
+    s.onerror = function(){ reject(new Error('Failed to load xlsx library from CDN.')); };
+    document.head.appendChild(s);
+  });
+  return _xlsxLib;
+}
+
+function renderGoals(){
+  var g = S.goals;
+  $('screen').innerHTML = '<div class="fade-in">'
+    + '<div class="section-tag">Goal check-in</div>'
+    + '<div class="q-head">How are your goals tracking?</div>'
+    + '<div class="q-sub">Upload your Workday goal export or skip straight to manual entry. Either way we\'ll generate a manager-ready update and Workday checklist.</div>'
+    + '<div class="card">'
+    +   '<label class="lbl">Option 1 — upload your Workday goal export <span class="hint">(.xlsx or .csv)</span></label>'
+    +   '<div id="dropZone" class="goal-upload-zone" onclick="triggerFilePick()" ondragover="event.preventDefault();this.style.outline=\'2px solid var(--orange)\'" ondragleave="this.style.outline=\'\'" ondrop="onFileDrop(event)">'
+    +     '<div style="font-size:22px;margin-bottom:6px">📊</div>'
+    +     '<div style="font-size:14px;color:var(--text2)">Drop file here or <span style="color:var(--orange);text-decoration:underline;cursor:pointer">click to browse</span></div>'
+    +     '<div style="font-size:12px;color:var(--text3);margin-top:4px">.xlsx or .csv exported from Workday</div>'
+    +   '</div>'
+    +   '<input type="file" id="goalFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="onFileInputChange(event)">'
+    +   '<div id="fileMsg" style="margin-top:10px;font-size:13px;min-height:20px"></div>'
+    +   '<details style="margin-top:8px">'
+    +     '<summary style="cursor:pointer;font-size:12px;color:var(--text2);padding:3px 0;list-style:none">▸ What format should my file be?</summary>'
+    +     '<div style="margin-top:8px;padding:10px 12px;background:var(--bg2);border-radius:var(--r-md);font-size:12px;color:var(--text2);line-height:1.8">'
+    +       '<strong>From Workday:</strong> Performance → Goals → Actions → Export to Excel/CSV.<br>'
+    +       '<strong>Columns it recognises:</strong> <em>Goal</em> (or Goal Name, Objective) · <em>Milestone</em> (or Key Result) · <em>Due Date</em> · <em>Milestone Status</em> · <em>Goal Status</em><br>'
+    +       '<strong>Tip:</strong> Only a "Goal" column is required — everything else is optional. Column names don\'t need to match exactly.'
+    +     '</div>'
+    +   '</details>'
+    + '</div>'
+    + '<div style="text-align:center;padding:.25rem 0;font-size:12px;color:var(--text3)">— or —</div>'
+    + '<button class="btn btn-s" style="width:100%;margin-bottom:1.25rem" onclick="showManualGoals()">Option 2 — enter my progress manually →</button>'
+    + '<div id="goalsBody"></div>'
+    + '<div id="goalsOut"></div>'
+    + '<div class="btn-row" id="goalsBtnRow">'
+    +   '<button class="btn btn-s" onclick="goBack()">← Back</button>'
+    + '</div>'
+    + '</div>';
+
+  // Restore state
+  if(g.parsedGoals && g.parsedGoals.length){
+    $('fileMsg').innerHTML = '<span style="color:green">✓ ' + g.parsedGoals.length + ' goal' + (g.parsedGoals.length>1?'s':'') + ' loaded.</span>';
+    renderGoalCards();
+  } else if(g.manualMode){
+    showManualGoals();
+  }
+  if(g.output){ $('goalsOut').innerHTML = buildGoalOut(g.output); addSummaryBtn(); }
+}
+
+function goBack(){
+  var dest = S.mode==='direct' ? 'q2' : S.mode==='discovery' ? 'discover' : 'coaching';
+  goStep(dest);
+}
+
+function triggerFilePick(){
+  var el = $('goalFileInput');
+  if(el) el.click();
+}
+
+function onFileDrop(e){
+  e.preventDefault();
+  var dz = $('dropZone'); if(dz) dz.style.outline = '';
+  var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if(f) loadGoalFile(f);
+}
+
+function onFileInputChange(e){
+  var f = e.target && e.target.files && e.target.files[0];
+  if(f) loadGoalFile(f);
+  // reset so same file can be picked again
+  e.target.value = '';
+}
+
+function setFileMsg(html){ var el=$('fileMsg'); if(el) el.innerHTML=html; }
+
+function loadGoalFile(file){
+  var ext = file.name.split('.').pop().toLowerCase();
+  setFileMsg('<span style="color:var(--orange)">Reading ' + escHtml(file.name) + '…</span>');
+
+  if(ext === 'csv'){
+    // CSV: pure FileReader, no library needed
+    var reader = new FileReader();
+    reader.onload = function(e){
+      try {
+        var rows = parseCSVText(e.target.result);
+        finishFileLoad(rows, file.name);
+      } catch(err){
+        setFileMsg('<span style="color:#c0392b">Could not parse CSV: ' + escHtml(err.message) + '</span>');
+      }
+    };
+    reader.onerror = function(){ setFileMsg('<span style="color:#c0392b">Could not read file.</span>'); };
+    reader.readAsText(file);
+
+  } else {
+    // XLSX/XLS: use SheetJS
+    getXLSX().then(function(XLSX){
+      var reader = new FileReader();
+      reader.onload = function(e){
+        try {
+          var data = new Uint8Array(e.target.result);
+          var wb   = XLSX.read(data, { type:'array', cellDates:false, raw:false });
+          var ws   = wb.Sheets[wb.SheetNames[0]];
+          var rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'', blankrows:false });
+
+          // Skip leading rows that appear to be report titles / blank until we find the header row
+          // A valid header row has at least 2 non-empty string cells
+          var startIdx = 0;
+          for(var si=0; si<Math.min(rows.length,10); si++){
+            var nonEmpty = (rows[si]||[]).filter(function(c){ return String(c||'').trim().length > 0; });
+            if(nonEmpty.length >= 2){ startIdx = si; break; }
+          }
+          if(startIdx > 0) rows = rows.slice(startIdx);
+
+          finishFileLoad(rows, file.name);
+        } catch(err){
+          setFileMsg('<span style="color:#c0392b">Could not parse spreadsheet: ' + escHtml(err.message) + '. Try File → Save As → CSV in Excel, then re-upload the .csv file.</span>');
+        }
+      };
+      reader.onerror = function(){ setFileMsg('<span style="color:#c0392b">Could not read file.</span>'); };
+      reader.readAsArrayBuffer(file);
+    }).catch(function(err){
+      setFileMsg('<span style="color:#c0392b">' + escHtml(err.message) + ' Try saving your file as CSV and uploading that instead.</span>');
+    });
+  }
+}
+
+function parseCSVText(text){
+  // Normalize line endings
+  var lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  var rows = [];
+  for(var i=0; i<lines.length; i++){
+    var line = lines[i];
+    if(!line.trim()) continue;
+    var cells = [], cur = '', inQ = false;
+    for(var j=0; j<line.length; j++){
+      var ch = line[j];
+      if(inQ){
+        if(ch === '"'){
+          // Check for escaped double-quote ("")
+          if(j+1 < line.length && line[j+1] === '"'){ cur += '"'; j++; }
+          else { inQ = false; }
+        } else { cur += ch; }
+      } else {
+        if(ch === '"'){ inQ = true; }
+        else if(ch === ','){ cells.push(cur.trim()); cur = ''; }
+        else if(ch === '\t'){ cells.push(cur.trim()); cur = ''; } // also handle tab-separated
+        else { cur += ch; }
+      }
+    }
+    cells.push(cur.trim());
+    // Skip rows that are all-empty
+    if(cells.some(function(c){ return c !== ''; })) rows.push(cells);
+  }
+  return rows;
+}
+
+function finishFileLoad(rows, fname){
+  if(!rows || rows.length < 2){
+    setFileMsg('<span style="color:#c0392b">File appears empty or could not be read.</span>');
+    return;
+  }
+
+  var goals = parseGoalRows(rows);
+
+  // Build a debug header preview for error messages
+  var detectedHeaders = (window._lastParsedHeader || rows[0] || []).slice(0,8).map(function(h){ return '"'+String(h||'').trim()+'"'; }).join(', ');
+
+  if(!goals.length){
+    setFileMsg(
+      '<span style="color:#c0392b"><strong>Could not find goals in this file.</strong><br>'
+      + 'Columns detected: <code style="font-size:11px;background:rgba(0,0,0,0.07);padding:2px 5px;border-radius:3px">' + escHtml(detectedHeaders) + '</code><br><br>'
+      + 'Expected a column containing goal names (e.g. "Goal", "Goal Name", or "Objective"). '
+      + 'If your file uses different column names, try renaming the goal column to <strong>Goal</strong> and re-uploading, '
+      + 'or use manual entry below.<br><br>'
+      + '<button onclick="showManualGoals()" style="color:var(--orange);background:none;border:none;cursor:pointer;font-family:var(--font);font-size:13px;text-decoration:underline;padding:0">Use manual entry instead →</button></span>'
+    );
+    return;
+  }
+
+  S.goals.parsedGoals = goals;
+  S.goals.manualMode  = false;
+  var od = 0;
+  goals.forEach(function(g){ g.milestones.forEach(function(m){ if(isOverdue(m.due,m.status)) od++; }); });
+
+  var milestoneSummary = '';
+  goals.forEach(function(g){ if(g.milestones.length) milestoneSummary = ' with milestones'; });
+
+  setFileMsg(
+    '<span style="color:green">✓ Loaded <strong>' + goals.length + ' goal' + (goals.length>1?'s':'') + '</strong>' + milestoneSummary
+    + (od ? ' · <strong style="color:#c0392b">⚠ ' + od + ' overdue milestone' + (od>1?'s':'') + '</strong>' : '')
+    + '. Review and add notes below, then click Generate.</span>'
+    + '<div style="font-size:11px;color:var(--text3);margin-top:4px">Detected columns: ' + escHtml(detectedHeaders) + '</div>'
+  );
+  renderGoalCards();
+}
+
+// ── Column detection & row parsing ───────────────────────────────────────────
+// Fuzzy column finder: checks for exact match first, then partial/contains match
+function findCol(header, names, fallback){
+  // Pass 1: exact match
+  for(var i=0; i<names.length; i++){
+    var idx = header.indexOf(names[i]);
+    if(idx > -1) return idx;
+  }
+  // Pass 2: partial/contains match (handles "goal name" matching "goal name (required)" etc.)
+  for(var i=0; i<names.length; i++){
+    for(var j=0; j<header.length; j++){
+      if(header[j].indexOf(names[i]) > -1 || names[i].indexOf(header[j]) > -1){
+        if(header[j].length > 1) return j; // avoid matching empty/single-char headers
+      }
+    }
+  }
+  return fallback; // -1 means "not found", positive fallback means "guess this column"
+}
+
+function parseGoalRows(raw){
+  var rawHeader = (raw[0]||[]);
+  var header = rawHeader.map(function(h){ return String(h||'').toLowerCase().trim().replace(/\s+/g,' '); });
+
+  // Store detected header for debug display
+  window._lastParsedHeader = rawHeader;
+
+  var col = {
+    goal:      findCol(header, ['goal','goal name','goal title','objective'], -1),
+    milestone: findCol(header, ['milestone','milestone name','milestone title','key result','kr'], -1),
+    due:       findCol(header, ['due date','due','date','target date','end date','completion date'], -1),
+    mStatus:   findCol(header, ['milestone status','milestone_status','key result status','kr status'], -1),
+    gStatus:   findCol(header, ['goal status','goal_status','objective status','status','overall status'], -1)
+  };
+
+  // If critical columns not found, try positional guesses based on file shape
+  // Many Workday exports are: Goal | Milestone | Due Date | Milestone Status | Goal Status
+  if(col.goal === -1){
+    // Try to find the first column that has non-numeric, non-date content that repeats across rows
+    for(var c=0; c<(rawHeader.length||6); c++){
+      var vals = raw.slice(1,6).map(function(r){ return String(r[c]||'').trim(); }).filter(Boolean);
+      if(vals.length >= 1 && vals[0].length > 5){ col.goal = c; break; }
+    }
+    if(col.goal === -1) col.goal = 0; // absolute last resort
+  }
+  if(col.milestone === -1) col.milestone = col.goal + 1 < header.length ? col.goal + 1 : -1;
+  if(col.due      === -1) col.due      = -1; // leave missing, dates are optional
+  if(col.mStatus  === -1) col.mStatus  = -1;
+  if(col.gStatus  === -1) col.gStatus  = -1;
+
+  var goals = [], seen = {};
+  for(var i=1; i<raw.length; i++){
+    var row = raw[i];
+    if(!row || row.every(function(c){ return !String(c||'').trim(); })) continue; // skip empty rows
+
+    var gt = col.goal >= 0 ? String(row[col.goal]||'').trim() : '';
+    if(!gt) continue;
+
+    var mt  = col.milestone >= 0 ? String(row[col.milestone]||'').trim() : '';
+    var ms  = col.mStatus   >= 0 ? String(row[col.mStatus]  ||'').trim() : '';
+    var gs  = col.gStatus   >= 0 ? String(row[col.gStatus]  ||'').trim() : '';
+    var due = col.due       >= 0 ? parseExcelDate(row[col.due]) : '';
+
+    // Skip rows where goal text looks like a header repeat
+    if(gt.toLowerCase() === 'goal' || gt.toLowerCase() === 'goal name') continue;
+
+    if(seen[gt] === undefined){
+      seen[gt] = goals.length;
+      goals.push({ id:goals.length, goal:gt, goalStatus:gs, milestones:[], hasActive:false, skipped:false, progress:'', milestoneUpdates:'', overdueReasons:[], overdueContext:'' });
+    }
+    var gi = seen[gt];
+    if(gs && !goals[gi].goalStatus) goals[gi].goalStatus = gs;
+    if(isActiveStatus(gs)) goals[gi].hasActive = true;
+    if(mt && mt !== gt){ // avoid adding the goal text itself as a milestone
+      goals[gi].milestones.push({ name:mt, status:ms, due:due });
+      if(isActiveStatus(ms)) goals[gi].hasActive = true;
+    }
+  }
+  return goals;
+}
+
+function parseExcelDate(v){
+  if(v == null || v === '') return '';
+  if(typeof v === 'number'){
+    var d = new Date(Math.round((v - 25569) * 86400000));
+    return isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'});
+  }
+  var s = String(v).trim();
+  if(!s) return '';
+  var d = new Date(s);
+  return isNaN(d.getTime()) ? s : d.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'});
+}
+
+function isActiveStatus(s){ var sl=(s||'').toLowerCase(); return sl.indexOf('in progress')>-1 || sl.indexOf('not started')>-1; }
+
+function isOverdue(due, status){
+  if(!due) return false;
+  if((status||'').toLowerCase().indexOf('complet') > -1) return false;
+  var d = new Date(due);
+  if(isNaN(d.getTime())) return false;
+  var today = new Date(); today.setHours(0,0,0,0);
+  return d < today;
+}
+
+function statusBadge(s, overdue){
+  if(!s) return '';
+  var sl=s.toLowerCase(), bg, color;
+  if(overdue)                          { bg='#fdecea'; color='#c0392b'; }
+  else if(sl.indexOf('in progress')>-1){ bg='var(--orange-l)'; color='var(--orange)'; }
+  else if(sl.indexOf('complet')>-1)    { bg='#edfaf1'; color='#27ae60'; }
+  else                                 { bg='var(--bg2)'; color='var(--text3)'; }
+  return '<span style="font-size:11px;padding:2px 9px;border-radius:10px;background:'+bg+';color:'+color+';white-space:nowrap">'+(overdue?'⚠ Overdue · ':'')+escHtml(s)+'</span>';
+}
+
+// ── Goal cards UI ─────────────────────────────────────────────────────────────
+var OVERDUE_REASONS = [
+  { id:'dependency', label:'Waiting on another team',     icon:'🔗' },
+  { id:'scope',      label:'Scope grew unexpectedly',     icon:'📐' },
+  { id:'resource',   label:'Resource or capacity gap',    icon:'⚡' },
+  { id:'system',     label:'System or tool delay',        icon:'🖥' },
+  { id:'priority',   label:'Reprioritised by leadership', icon:'🔀' },
+  { id:'personal',   label:'My own time management',      icon:'⏱' },
+  { id:'unclear',    label:'Goal wasn\'t clear enough',   icon:'❓' },
+  { id:'other',      label:'Something else',              icon:'💬' }
+];
+
+function setOverdueReason(gi, reasonId, btn){
+  var g = S.goals.parsedGoals[gi];
+  if(!g.overdueReasons) g.overdueReasons = [];
+  var idx = g.overdueReasons.indexOf(reasonId);
+  if(idx > -1){
+    g.overdueReasons.splice(idx, 1);  // deselect
+  } else {
+    g.overdueReasons.push(reasonId);  // select
+  }
+  // Update all chip styles in the container
+  var container = btn.parentElement;
+  var btns = container.querySelectorAll('button');
+  btns.forEach(function(b, i){
+    var rid = OVERDUE_REASONS[i] ? OVERDUE_REASONS[i].id : '';
+    var sel = g.overdueReasons.indexOf(rid) > -1;
+    b.style.background  = sel ? '#c0392b' : 'white';
+    b.style.color       = sel ? 'white'   : '#7a2020';
+    b.style.border      = sel ? '1.5px solid #c0392b' : '1px solid rgba(192,57,43,0.35)';
+  });
+}
+
+function renderGoalCards(){
+  var goals = S.goals.parsedGoals;
+  if(!goals || !goals.length) return;
+
+  var html = '';
+  for(var i=0; i<goals.length; i++){
+    var g = goals[i];
+    var dim = g.skipped ? 'opacity:.45;' : '';
+
+    // Detect overdue milestones for this goal
+    var overdueMilestones = [];
+    for(var j=0; j<g.milestones.length; j++){
+      if(isOverdue(g.milestones[j].due, g.milestones[j].status)){
+        overdueMilestones.push(g.milestones[j]);
+      }
+    }
+    var hasOverdue = overdueMilestones.length > 0;
+    var acc = hasOverdue ? 'border-left:2px solid #c0392b;' : (g.hasActive ? 'border-left:2px solid var(--orange);' : '');
+
+    html += '<div class="card" id="gc'+i+'" style="margin-top:.75rem;'+acc+dim+'">';
+
+    // Header
+    html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px">';
+    html +=   '<div style="flex:1;min-width:0">';
+    var tagColor = hasOverdue ? '#c0392b' : (g.hasActive ? 'var(--orange)' : 'var(--text3)');
+    var tagText  = 'Goal '+(i+1)+(g.skipped?' · Skipped':'')+(hasOverdue?' · Has overdue milestone':(g.hasActive?' · Active':''));
+    html +=     '<div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:'+tagColor+';font-weight:500;margin-bottom:3px">'+tagText+'</div>';
+    html +=     '<div style="font-size:14px;font-weight:500;line-height:1.45">'+escHtml(g.goal)+'</div>';
+    html +=   '</div>';
+    html +=   '<div style="display:flex;gap:6px;align-items:center;flex-shrink:0">';
+    html +=     statusBadge(g.goalStatus, false);
+    html +=     '<button onclick="toggleSkip('+i+')" style="font-size:11px;background:none;border:0.5px solid var(--border-md);border-radius:var(--r-md);padding:3px 9px;cursor:pointer;color:var(--text2);font-family:var(--font)">'+(g.skipped?'Include':'Skip')+'</button>';
+    html +=   '</div>';
+    html += '</div>';
+
+    if(!g.skipped){
+      // Milestones table
+      if(g.milestones.length){
+        html += '<div style="border:0.5px solid var(--border);border-radius:var(--r-md);overflow:hidden;margin-bottom:10px">';
+        for(var j=0; j<g.milestones.length; j++){
+          var m  = g.milestones[j];
+          var od = isOverdue(m.due, m.status);
+          var isComp = (m.status||'').toLowerCase().indexOf('complet') > -1;
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:0.5px solid var(--border);gap:8px;'+(od?'background:rgba(192,57,43,0.05)':'')+'">';
+          html +=   '<span style="font-size:12px;'+(isComp?'text-decoration:line-through;color:var(--text3)':'')+'">'+escHtml(m.name)+'</span>';
+          html +=   '<div style="display:flex;gap:6px;align-items:center;flex-shrink:0">'+statusBadge(m.status,od)+(m.due?'<span style="font-size:11px;color:var(--text3)">'+m.due+'</span>':'')+'</div>';
+          html += '</div>';
+        }
+        html += '</div>';
+      }
+
+      // Progress — always shown
+      html += '<label class="lbl" style="margin-top:4px">Progress this quarter <span class="hint">bullet points fine</span></label>';
+      html += '<textarea class="field" data-gi="'+i+'" data-f="progress" style="min-height:65px" placeholder="What moved forward? What completed? What\'s still in flight?">'+escHtml(g.progress)+'</textarea>';
+
+      if(hasOverdue){
+        // ── Overdue accountability panel ─────────────────────────────
+        // Deliberately NO date-change textarea — we want them to own the delay, not hide it
+        html += '<div style="margin-top:12px;padding:14px;background:#fdecea;border-radius:var(--r-md);border-left:3px solid #c0392b">';
+        html +=   '<div style="font-size:12px;font-weight:500;color:#a93226;margin-bottom:5px">⚠ Overdue milestone — let\'s frame this honestly</div>';
+        html +=   '<div style="font-size:13px;color:#641e16;line-height:1.7;margin-bottom:12px">'
+          +         'The most trusted employees own delays directly rather than quietly moving dates. '
+          +         'Your manager will appreciate transparency — and knowing <em>why</em> it happened '
+          +         'helps them support you or remove blockers.'
+          +       '</div>';
+        html +=   '<div style="font-size:11px;font-weight:500;color:#a93226;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">What caused the delay?</div>';
+        html +=   '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">';
+        for(var r=0; r<OVERDUE_REASONS.length; r++){
+          var reason = OVERDUE_REASONS[r];
+          var isSel  = g.overdueReasons && g.overdueReasons.indexOf(reason.id) > -1;
+          html += '<button onclick="setOverdueReason('+i+',\''+reason.id+'\',this)"'
+            + ' style="font-size:12px;padding:5px 12px;border-radius:20px;cursor:pointer;font-family:var(--font);transition:all .15s;'
+            + (isSel ? 'background:#c0392b;color:white;border:1.5px solid #c0392b;'
+                     : 'background:white;color:#a93226;border:1px solid rgba(192,57,43,0.4);')
+            + '">'
+            + reason.icon+' '+escHtml(reason.label)
+            + '</button>';
+        }
+        html +=   '</div>';
+        html +=   '<label style="font-size:11px;font-weight:500;color:#a93226;text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:5px">'
+          +         'More context <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#641e16">'
+          +         '— what happened, and what\'s the path forward?'
+          +         '</span>'
+          +       '</label>';
+        html +=   '<textarea data-gi="'+i+'" data-f="overdueContext"'
+          + ' style="width:100%;border:1px solid rgba(192,57,43,0.35);border-radius:var(--r-md);padding:9px 11px;font-family:var(--font);font-size:13px;color:#1a1a2e;background:white;line-height:1.6;outline:none;resize:vertical;min-height:65px;"'
+          + ' placeholder="e.g. The vendor API integration was delayed 3 weeks — we escalated and it\'s now unblocked. I\'m confident the next milestone will land on time and I\'ll flag earlier if anything shifts again.">'
+          + escHtml(g.overdueContext)
+          + '</textarea>';
+        html += '</div>';
+
+      } else {
+        // On-track: normal Workday updates field
+        html += '<label class="lbl" style="margin-top:8px">Workday updates needed <span class="hint">status changes, completions to mark</span></label>';
+        html += '<textarea class="field" data-gi="'+i+'" data-f="milestoneUpdates" style="min-height:50px" placeholder="e.g. Mark \'Phase 1\' complete · Update \'Phase 2\' to In Progress">'+escHtml(g.milestoneUpdates)+'</textarea>';
+      }
+    }
+    html += '</div>';
+  }
+
+  // New work card
+  html += '<div class="card" style="margin-top:.75rem">';
+  html +=   '<div style="font-size:13px;font-weight:500;margin-bottom:10px">New work since your last connect</div>';
+  html +=   '<label class="lbl">Any new projects or initiatives you\'ve been pulled into?</label>';
+  html +=   '<textarea class="field" id="gNewWork" style="min-height:60px" placeholder="e.g. Co-leading the AI platform launch, regional enablement rollout…">'+escHtml(S.goals.newWork)+'</textarea>';
+  html +=   '<label class="lbl" style="margin-top:10px">Should any of this become a new formal goal?</label>';
+  html +=   '<div class="pill-row" style="margin-bottom:8px">';
+  html +=     '<button class="pill '+(S.goals.addGoal==='yes'?'sel':'')+'" onclick="setAddGoal(\'yes\',this)">Yes, add a goal</button>';
+  html +=     '<button class="pill '+(S.goals.addGoal==='no'?'sel':'')+'" onclick="setAddGoal(\'no\',this)">Not yet</button>';
+  html +=     '<button class="pill '+(S.goals.addGoal==='unsure'?'sel':'')+'" onclick="setAddGoal(\'unsure\',this)">Help me decide</button>';
+  html +=   '</div>';
+  html +=   '<textarea class="field" id="gNewGoalDetail" style="min-height:50px" placeholder="If yes or unsure, briefly describe it…">'+escHtml(S.goals.newGoalDetail)+'</textarea>';
+  html += '</div>';
+
+  $('goalsBody').innerHTML = html;
+
+  // Wire up textarea state sync (data-gi textareas)
+  var els = document.querySelectorAll('textarea[data-gi]');
+  for(var k=0; k<els.length; k++){
+    els[k].addEventListener('input', (function(el){
+      return function(){ S.goals.parsedGoals[+el.dataset.gi][el.dataset.f] = el.value; };
+    })(els[k]));
+  }
+
+  // Add generate button
+  addGenerateBtn();
+}
+
+function toggleSkip(i){
+  if(!S.goals.parsedGoals) return;
+  S.goals.parsedGoals[i].skipped = !S.goals.parsedGoals[i].skipped;
+  renderGoalCards();
+}
+
+function setAddGoal(v, el){
+  S.goals.addGoal = S.goals.addGoal===v ? '' : v;
+  el.closest('.pill-row').querySelectorAll('.pill').forEach(function(p){ p.classList.remove('sel'); });
+  if(S.goals.addGoal) el.classList.add('sel');
+}
+
+function addGenerateBtn(){
+  var btnRow = $('goalsBtnRow');
+  if(btnRow && !btnRow.querySelector('#ggbtn')){
+    var gb = document.createElement('button');
+    gb.id='ggbtn'; gb.className='btn btn-p';
+    gb.textContent = 'Generate goal update →';
+    gb.onclick = runGoals;
+    btnRow.prepend(gb);
+  }
+}
+
+function addSummaryBtn(){
+  var btnRow = $('goalsBtnRow');
+  if(btnRow && !btnRow.querySelector('.nxt')){
+    var nb = document.createElement('button');
+    nb.className='btn btn-s nxt';
+    nb.textContent='See full summary →';
+    nb.onclick = function(){ goStep('review'); };
+    btnRow.appendChild(nb);
+  }
+}
+
+// ── Manual entry ──────────────────────────────────────────────────────────────
+function showManualGoals(){
+  S.goals.parsedGoals = null;
+  S.goals.manualMode  = true;
+  $('goalsBody').innerHTML = '<div class="card" style="margin-top:.75rem">'
+    + '<label class="lbl">Your progress on goals this quarter <span class="hint">bullet points fine</span></label>'
+    + '<textarea class="field" id="manProg" style="min-height:90px" placeholder="e.g. Completed phase 1 of listening strategy, on track for Q2 milestones, industry benchmarking 80% done…">'+escHtml(S.goals.manualProgress)+'</textarea>'
+    + '<label class="lbl" style="margin-top:10px">Milestone or date changes to make in Workday</label>'
+    + '<textarea class="field" id="manMiles" style="min-height:65px" placeholder="e.g. Industry benchmarking moved to April 10, Assess Current State now complete…">'+escHtml(S.goals.milestones||'')+'</textarea>'
+    + '<label class="lbl" style="margin-top:10px">New work or initiatives since your last connect</label>'
+    + '<textarea class="field" id="gNewWork" style="min-height:65px" placeholder="e.g. Co-leading the regional enablement rollout…">'+escHtml(S.goals.newWork)+'</textarea>'
+    + '<label class="lbl" style="margin-top:10px">Should any become a new formal goal?</label>'
+    + '<div class="pill-row" style="margin-bottom:8px">'
+    +   '<button class="pill '+(S.goals.addGoal==='yes'?'sel':'')+'" onclick="setAddGoal(\'yes\',this)">Yes, add a goal</button>'
+    +   '<button class="pill '+(S.goals.addGoal==='no'?'sel':'')+'" onclick="setAddGoal(\'no\',this)">Not yet</button>'
+    +   '<button class="pill '+(S.goals.addGoal==='unsure'?'sel':'')+'" onclick="setAddGoal(\'unsure\',this)">Help me decide</button>'
+    + '</div>'
+    + '<textarea class="field" id="gNewGoalDetail" style="min-height:50px" placeholder="Describe briefly…">'+escHtml(S.goals.newGoalDetail)+'</textarea>'
+    + '</div>';
+  addGenerateBtn();
+}
+
+// ── AI generation ─────────────────────────────────────────────────────────────
+async function runGoals(){
+  // Sync textarea values to state
+  if($('gNewWork'))       S.goals.newWork       = $('gNewWork').value;
+  if($('gNewGoalDetail')) S.goals.newGoalDetail = $('gNewGoalDetail').value;
+  if($('manProg'))        S.goals.manualProgress = $('manProg').value;
+  if($('manMiles'))       S.goals.milestones    = $('manMiles').value;
+
+  var today  = new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  var g      = S.goals;
+  var parsed = g.parsedGoals;
+
+  var goalsCtx;
+  if(parsed && parsed.length){
+    goalsCtx = parsed.filter(function(x){ return !x.skipped; }).map(function(x,i){
+      var s = 'Goal '+(i+1)+': "'+x.goal+'"\nStatus: '+(x.goalStatus||'Unknown');
+      var goalHasOverdue = false;
+      if(x.milestones.length){
+        s += '\nMilestones:\n' + x.milestones.map(function(m){
+          var od = isOverdue(m.due, m.status);
+          if(od) goalHasOverdue = true;
+          return '  - '+m.name+' | '+(m.status||'Unknown')+' | Due: '+(m.due||'Unknown')
+            + (od ? ' *** OVERDUE — employee must own this, not hide it ***' : '');
+        }).join('\n');
+      }
+      if(x.progress) s += '\nProgress notes: '+x.progress;
+      if(goalHasOverdue){
+        var reasonLabel = '';
+        if(x.overdueReasons && x.overdueReasons.length){
+          reasonLabel = x.overdueReasons.map(function(rid){
+            var found = OVERDUE_REASONS.filter(function(r){ return r.id===rid; });
+            return found.length ? found[0].label : rid;
+          }).join(', ');
+        }
+        s += '\nDelay reason(s) selected by employee: '+(reasonLabel||'Not selected');
+        s += '\nDelay context from employee: '+(x.overdueContext||'Not provided');
+      } else if(x.milestoneUpdates){
+        s += '\nWorkday updates needed: '+x.milestoneUpdates;
+      }
+      return s;
+    }).join('\n\n');
+  } else {
+    goalsCtx = 'Progress: '+(g.manualProgress||'Not provided')+'\nMilestone updates: '+(g.milestones||'None');
+  }
+
+  var addNote = g.addGoal==='yes'    ? 'Employee wants a new goal — draft a SMART-aligned statement.' :
+                g.addGoal==='unsure' ? 'Employee is unsure — recommend and draft if appropriate.' :
+                                       'No new goal at this time.';
+
+  var prompt = 'Employee goal check-in on '+today+'.\n\n'
+    + goalsCtx + '\n\n'
+    + 'New work: '+(g.newWork||'None')+'\n'
+    + 'New goal: '+(g.addGoal||'not specified')+' — '+(g.newGoalDetail||'')+' '+addNote+'\n'
+    + (S.role ? 'Role: '+S.role+'\n' : '')
+    + '\nCRITICAL RULE FOR OVERDUE MILESTONES: If any milestone is marked *** OVERDUE ***, do NOT suggest changing the due date or quietly updating the status to hide the delay. The employee must own it transparently.\n\n'
+    + 'Generate exactly three sections:\n\n'
+    + '---GOAL PROGRESS CONVERSATION---\n'
+    + 'Single paragraph, 100–150 words, first person, no bullets. For overdue milestones: acknowledge the delay directly and honestly, state the reason if provided, and show a clear path forward — do not gloss over it. For on-track goals: cover wins and momentum. Warm but accountable tone. Connect to 1–2 Teradata 2026 priorities naturally.\n\n'
+    + '---WORKDAY UPDATE CHECKLIST---\n'
+    + 'Table only, no prose. Format: GOAL | ITEM | ACTION | CHANGE TO\n'
+    + 'For overdue milestones: list them with ACTION = "Discuss with manager" and CHANGE TO = "No date change — own the delay". Do NOT suggest moving the due date.\n'
+    + 'For completed items or legitimate status updates: list normally.\n\n'
+    + '---NEW GOAL DRAFT---\n'
+    + (g.addGoal==='no' ? 'One sentence noting no new goal is being added.' : 'A 2–3 sentence SMART goal ready to paste into Workday.')+'\n\n'
+    + '💡 Coaching tip: '+(goalsCtx.indexOf('OVERDUE')>-1
+        ? '[Give one specific, practical tip on how to have the overdue conversation with their manager — what to say, what posture to take, how to show ownership without being defensive]'
+        : '[One brief suggestion to make the goal progress conversation stronger]');
+
+  var btn = $('ggbtn');
+  btn.disabled = true;
+  btn.innerHTML = 'Generating <span class="ld"><span>.</span><span>.</span><span>.</span></span>';
+  $('goalsOut').innerHTML = '<div class="ai-block"><div class="ai-lbl">Building your goal update…</div><div class="ai-text streaming" id="gstream"></div></div>';
+
+  var text = '';
+  await new Promise(function(resolve){
+    stream(
+      [{role:'user', content:prompt}],
+      BASE_SYSTEM,
+      function(c){ text += c; var el=$('gstream'); if(el) el.textContent=text; },
+      function(){
+        S.goals.output = text;
+        $('goalsOut').innerHTML = buildGoalOut(text);
+        btn.disabled=false; btn.textContent='Regenerate →';
+        addSummaryBtn();
+        resolve();
+      }
+    );
+  });
+}
+
+// ── Output renderer ───────────────────────────────────────────────────────────
+function buildGoalOut(text){
+  var rxConv = /---\s*GOAL PROGRESS CONVERSATION\s*---/i;
+  var rxCl   = /---\s*WORKDAY UPDATE CHECKLIST\s*---/i;
+  var rxNg   = /---\s*NEW GOAL DRAFT\s*---/i;
+  var rxTip  = /💡\s*Coaching tip:/i;
+
+  function extractSection(from, stopRxs){
+    var cut = from.length;
+    for(var i=0; i<stopRxs.length; i++){
+      var m = from.match(stopRxs[i]);
+      if(m){ var p=from.indexOf(m[0]); if(p<cut) cut=p; }
+    }
+    return from.slice(0,cut).trim();
+  }
+
+  var mConv=text.match(rxConv), mCl=text.match(rxCl), mNg=text.match(rxNg), mTip=text.match(rxTip);
+  var conv='', cl='', ng='', tip='';
+  if(mConv) conv = extractSection(text.slice(text.indexOf(mConv[0])).replace(rxConv,'').trim(), [rxCl,rxNg,rxTip]);
+  if(mCl)   cl   = extractSection(text.slice(text.indexOf(mCl[0])).replace(rxCl,'').trim(),   [rxNg,rxTip]);
+  if(mNg)   ng   = extractSection(text.slice(text.indexOf(mNg[0])).replace(rxNg,'').trim(),   [rxTip]);
+  if(mTip)  tip  = text.slice(text.indexOf(mTip[0])).replace(rxTip,'').trim();
+  if(!conv && !cl && !ng) conv = text.trim();
+
+  function renderTable(raw){
+    var rows = raw.split('\n').map(function(l){ return l.trim(); }).filter(function(l){ return l.indexOf('|')>-1; });
+    var data = rows.filter(function(r){ return !/^GOAL\s*\|/i.test(r) && !/^[-|]+$/.test(r); });
+    if(!data.length) return '<div style="font-size:13px;color:var(--text2);white-space:pre-wrap">'+escHtml(raw)+'</div>';
+    var tableHtml = '<div style="overflow-x:auto;margin-top:6px"><table style="width:100%;border-collapse:collapse;font-size:12px">'
+      + '<thead><tr style="background:var(--bg3)">'
+      + ['Goal','Item','Action','Change to'].map(function(h){ return '<th style="text-align:left;padding:6px 10px;border:0.5px solid var(--border);font-size:10px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">'+h+'</th>'; }).join('')
+      + '</tr></thead><tbody>';
+    data.forEach(function(r){
+      var c = r.split('|').map(function(x){ return x.trim(); });
+      while(c.length<4) c.push('—');
+      var od = c[3] && c[3].indexOf('OVERDUE')>-1;
+      tableHtml += '<tr style="'+(od?'background:#fdecea':'')+'">'
+        + c.slice(0,4).map(function(cell,ci){ return '<td style="padding:6px 10px;border:0.5px solid var(--border);color:'+(od&&ci===3?'#c0392b':'var(--text)')+';line-height:1.5;vertical-align:top">'+escHtml(cell)+'</td>'; }).join('')
+        + '</tr>';
+    });
+    tableHtml += '</tbody></table></div>';
+    return tableHtml;
+  }
+
+  var html = '<div class="ai-block">'
+    + '<div style="margin-bottom:1rem">'
+    +   '<div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--orange);font-weight:500;margin-bottom:6px">Goal progress — share in your 1:1</div>'
+    +   '<div class="ai-text" id="gConvText">'+escHtml(conv)+'</div>'
+    +   '<button class="copy-btn" onclick="copyEl(\'gConvText\')">Copy conversation</button>'
+    + '</div>'
+    + '<div class="divider"></div>'
+    + '<div style="margin-bottom:1rem">'
+    +   '<div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--orange);font-weight:500;margin-bottom:6px">Workday update checklist</div>'
+    +   (cl ? renderTable(cl) : '<div style="font-size:13px;color:var(--text3)">No Workday updates needed.</div>')
+    + '</div>';
+
+  if(ng){
+    html += '<div class="divider"></div>'
+      + '<div style="margin-bottom:1rem">'
+      +   '<div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--orange);font-weight:500;margin-bottom:6px">New goal draft</div>'
+      +   '<div class="ai-text" id="gNgText" style="font-size:13px">'+escHtml(ng)+'</div>'
+      +   '<button class="copy-btn" onclick="copyEl(\'gNgText\')">Copy new goal</button>'
+      + '</div>';
+  }
+  if(tip){
+    html += '<div class="divider"></div>'
+      + '<div style="font-size:12px;color:var(--text2);line-height:1.7">💡 '+escHtml(tip)+'</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCREEN: REVIEW
+// ═══════════════════════════════════════════════════════════════
+function renderReview(){
+  const q1p = S.outputs.q1?S.outputs.q1.split('💡 Coaching tip:'):[];
+  const q2p = S.outputs.q2?S.outputs.q2.split('💡 Coaching tip:'):[];
+  const ph = '<span style="color:var(--text3);font-style:italic">Not completed — go back to edit</span>';
+
+  $('screen').innerHTML=`<div class="fade-in">
+    <div style="text-align:center;padding:.75rem 0 1.75rem">
+      <div class="section-tag" style="justify-content:center">Workday-ready</div>
+      <div class="q-head" style="font-size:24px">Your Quarterly Connect</div>
+      <div class="q-sub">Copy each section and paste directly into Workday.</div>
+    </div>
+
+    <div class="review-card">
+      <div class="review-lbl">Question 1 — Contributions, challenges & growth</div>
+      <div class="review-txt" id="rv1">${q1p[0]?escHtml(q1p[0].trim()):ph}</div>
+      ${q1p[0]?`<button class="copy-btn" onclick="copyEl('rv1')">Copy</button>`:''}
+    </div>
+
+    <div class="review-card">
+      <div class="review-lbl">Question 2 — Skills & development</div>
+      <div class="review-txt" id="rv2">${q2p[0]?escHtml(q2p[0].trim()):ph}</div>
+      ${q2p[0]?`<button class="copy-btn" onclick="copyEl('rv2')">Copy</button>`:''}
+    </div>
+
+    ${S.goals.output?`<div class="review-card">
+      <div class="review-lbl">Goals — conversation & Workday updates</div>
+      ${buildGoalOut(S.goals.output)}
+    </div>`:''}
+
+    <div class="btn-row" style="justify-content:center;margin-top:1.5rem;flex-wrap:wrap">
+      <button class="btn btn-s" onclick="goStep('mode')">Start over</button>
+      ${S.mode==='discovery'?`<button class="btn btn-s" onclick="goStep('discover')">Edit conversation</button>`:''}
+      ${S.mode!=='coaching'?`<button class="btn btn-s" onclick="goStep('q1')">Edit Q1</button><button class="btn btn-s" onclick="goStep('q2')">Edit Q2</button>`:''}
+      <button class="btn btn-s" onclick="goStep('goals')">Edit goals</button>
+    </div>
+
+    <div class="tip-pill" style="margin-top:1.5rem">These drafts are a starting point. Read through and make sure they sound like you before pasting into Workday.</div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CONTEXT PICKER (direct mode)
+// ═══════════════════════════════════════════════════════════════
+function ctxPicker(key){
+  const s=S[key];
+  return `<div class="card">
+    <div class="lbl">Which Teradata priorities does this connect to? <span class="hint">(optional)</span></div>
+    <div class="ctx-group-label">2026 Company Goals</div>
+    <div>${COMPANY.scorecard.map(x=>`<span class="ctx-pill ${s.scorecard.includes(x.id)?'sel':''}" onclick="toggleCtx('${key}','scorecard','${x.id}',this)">${x.label}</span>`).join('')}</div>
+    <div class="ctx-group-label">Core Principles</div>
+    <div>${COMPANY.principles.map(x=>`<span class="ctx-pill ${s.principles.includes(x.id)?'sel':''}" onclick="toggleCtx('${key}','principles','${x.id}',this)">${x.label}</span>`).join('')}</div>
+    <div class="ctx-group-label">Leadership Pillars</div>
+    <div>${COMPANY.pillars.map(x=>`<span class="ctx-pill ${s.pillars.includes(x.id)?'sel':''}" onclick="toggleCtx('${key}','pillars','${x.id}',this)">${x.label}</span>`).join('')}</div>
+  </div>`;
+}
+
+function toggleCtx(key,cat,id,el){ const arr=S[key][cat]; const i=arr.indexOf(id); i>-1?arr.splice(i,1):arr.push(id); el.classList.toggle('sel'); }
+
+function buildCtxString(){ const s=S.direct; const parts=[]; if(s.scorecard.length) parts.push('Company goals: '+s.scorecard.map(id=>COMPANY.scorecard.find(x=>x.id===id)?.label).filter(Boolean).join(', ')); if(s.principles.length) parts.push('Principles: '+s.principles.map(id=>COMPANY.principles.find(x=>x.id===id)?.label).filter(Boolean).join(', ')); if(s.pillars.length) parts.push('Pillars: '+s.pillars.map(id=>COMPANY.pillars.find(x=>x.id===id)?.label).filter(Boolean).join(', ')); return parts.length?'\nEmployee-selected context:\n'+parts.join('\n'):''; }
+
+// ═══════════════════════════════════════════════════════════════
+// SHARED HELPERS
+// ═══════════════════════════════════════════════════════════════
+function buildReflectionOut(key,text,label){
+  const p=text.split('💡 Coaching tip:'); const main=p[0].trim(); const tip=p[1]?p[1].trim():'';
+  return `<div class="ai-block"><div class="ai-lbl">${label}</div><div class="ai-text" id="${key}t">${escHtml(main)}</div><button class="copy-btn" onclick="copyEl('${key}t')">Copy reflection</button>${tip?`<div class="divider"></div><div class="tip-pill">💡 ${escHtml(tip)}</div>`:''}</div>`;
+}
+
+function errBox(m){ return `<div class="tip-pill" style="border-left-color:#d63031;background:rgba(214,48,49,0.07);color:#c0392b">${m}</div>`; }
+
+function escHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function copyEl(id){
+  const el=$(id); if(!el) return;
+  const text=el.textContent;
+  const btn=el.parentElement.querySelector('.copy-btn');
+  const mark=()=>{ if(btn){const orig=btn.textContent;btn.textContent='Copied!';setTimeout(()=>btn.textContent=orig,2000);} };
+  if(navigator.clipboard&&window.isSecureContext){ navigator.clipboard.writeText(text).then(mark).catch(()=>fallback(text,mark)); }
+  else fallback(text,mark);
+}
+function fallback(text,cb){ const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;left:-9999px;top:-9999px;opacity:0';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');cb();}catch(e){}document.body.removeChild(ta); }
+</script>
+</body>
+</html>
