@@ -1,18 +1,18 @@
-exports.handler = async function(event) {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+export default async function(req, context) {
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return { statusCode: 500, body: JSON.stringify({ error: 'API key not configured' }) };
+    return new Response(JSON.stringify({ error: 'API key not configured' }), { status: 500 });
   }
 
   let body;
   try {
-    body = JSON.parse(event.body);
+    body = await req.json();
   } catch {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON body' }) };
+    return new Response(JSON.stringify({ error: 'Invalid JSON body' }), { status: 400 });
   }
 
   const { messages, system, max_tokens = 1200 } = body;
@@ -36,28 +36,19 @@ exports.handler = async function(event) {
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
-      return {
-        statusCode: response.status,
-        body: JSON.stringify({ error: err?.error?.message || 'Anthropic API error' })
-      };
+      return new Response(JSON.stringify({ error: err?.error?.message || 'Anthropic API error' }), { status: response.status });
     }
 
-    const reader = response.body.getReader();
-    const chunks = [];
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-    }
-
-    const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-    const combined = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const chunk of chunks) { combined.set(chunk, offset); offset += chunk.length; }
-
-    return {
-      statusCode: 200,
+    return new Response(response.body, {
+      status: 200,
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
-        'Access
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
+
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message || 'Proxy error' }), { status: 500 });
+  }
+}
